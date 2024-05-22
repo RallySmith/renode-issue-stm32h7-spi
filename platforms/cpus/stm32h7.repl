@@ -55,6 +55,15 @@ adc3: Analog.STM32F0_ADC @ sysbus 0x58026000
     externalEventFrequency: 1000
     -> exti@75
 
+// 0x58025800 - 0x58025BFF  DMAMUX2
+dmamux2: DMA.STM32H7_DMAMUX @ sysbus <0x58025800, +0x0400>
+    numberOfOutRequestChannels: 8
+    numberOfRequestTriggerInputs: 32
+    numberOfSynchronisationInputs: 32
+    // NOTE: RM0468 rev3 Table117 and RM0433 rev7 Table120 say numberOfSynchronisationInputs 16 but respective Table123 and Table126 show 32 inputs
+    // TODO: DMAMUX2 channels 0..7 connected to BDMA channels 0..7
+    //[0-7] -> bdma@[0-7] // TODO: Error E12: Type 'Antmicro.Renode.Peripherals.DMA.STM32LDMA' does not implement IGPIOReceiver and cannot be a destination of interrupts.
+
 // 0x58025400 - 0x580257FF  BDMA
 bdma: DMA.STM32LDMA @ sysbus 0x58025400
     [0-7] -> nvic@[129-136]
@@ -148,9 +157,11 @@ i2c4: I2C.STM32F7_I2C @ sysbus 0x58001C00
 //    ErrorInterrupt -> exti@63
 
 // 0x58001400 - 0x580017FF  SPI6
-spi6: SPI.STM32H7_SPI @ sysbus 0x58001400
+spi6: SPI.STM32H7_SPI_Fixed @ sysbus 0x58001400
     IRQ -> nvic@86
     // CONSIDER: IRQ -> exti@65
+    DMAReceive -> dmamux2@11
+    DMATransmit -> dmamux2@12
 
 // 0x58000C00 - 0x58000FFF  LPUART1
 lpuart1: UART.STM32F7_USART @ sysbus 0x58000C00
@@ -262,20 +273,31 @@ adcM1S2: Analog.STM32F0_ADC @ sysbus 0x40022000
     externalEventFrequency: 1000
     -> nvic@18
 
+// 0x40020800 - 0x40020BFF  DMAMUX1
+dmamux1: DMA.STM32H7_DMAMUX @ sysbus <0x40020800, +0x0400>
+    numberOfOutRequestChannels: 16
+    numberOfSynchronisationInputs: 8
+    // TODO: DMAMUX1 channels 0..7  connected to DMA1 channels 0..7
+    [0-7] -> dma1@[0-7]
+    // TODO: DMAMUX1 channels 8..15 connected to DMA2 channels 0..7
+    [8-15] -> dma2@[0-7]
+
 // 0x40020400 - 0x400207FF  DMA2
-dma2: DMA.STM32DMA @ sysbus 0x40020400
+dma2: DMA.STM32DMA_Fixed @ sysbus 0x40020400
     [0-7] -> nvic@[56-60, 68-70]
 
 // 0x40020000 - 0x400203FF  DMA1
-dma1: DMA.STM32DMA @ sysbus 0x40020000
+dma1: DMA.STM32DMA_Fixed @ sysbus 0x40020000
     [0-7] -> nvic@[11-17, 47]
 
 // APB2 (D1)
 // 0x40015800 - 0x40015BFF  SA11
 
 // 0x40015000 - 0x400153FF  SPI5
-spi5: SPI.STM32H7_SPI @ sysbus 0x40015000
+spi5: SPI.STM32H7_SPI_Fixed @ sysbus 0x40015000
     IRQ -> nvic@85
+    DMAReceive -> dmamux1@85
+    DMATransmit -> dmamux1@86
 
 // 0x40014800 - 0x40014BFF  TIM17
 timer17: Timers.STM32_Timer @ sysbus <0x40014800, +0x400>
@@ -296,12 +318,19 @@ timer15: Timers.STM32_Timer @ sysbus <0x40014000, +0x400>
     IRQ -> nvic@116
 
 // 0x40013400 - 0x400137FF  SPI4
-spi4: SPI.STM32H7_SPI @ sysbus 0x40013400
+spi4: SPI.STM32H7_SPI_Fixed @ sysbus 0x40013400
     IRQ -> nvic@84
+    DMAReceive -> dmamux1@83
+    DMATransmit -> dmamux1@84
 
 // 0x40013000 - 0x400133FF  SPI1
-spi1: SPI.STM32H7_SPI @ sysbus 0x40013000
+spi1: SPI.STM32H7_SPI_Fixed @ sysbus 0x40013000
     IRQ -> nvic@35
+    //DMAReceive -> dmamux1@37
+    //DMATransmit -> dmamux1@38
+    // TODO:Temporary HACK: for the moment hardwire to the DMA channels we know that eCos KH8x0 uses // allows bootloader to execute
+    DMAReceive -> dma1@1
+    DMATransmit -> dma1@0
 
 // 0x40011400 - 0x400117FF  USART6
 usart6: UART.STM32F7_USART @ sysbus 0x40011400
@@ -399,12 +428,19 @@ usart2: UART.STM32F7_USART @ sysbus 0x40004400
 // 0x40004000 - 0x400043FF  SPDIFRX1
 
 // 0x40003C00 - 0x40003FFF  SPI3
-spi3: SPI.STM32H7_SPI @ sysbus 0x40003C00
+spi3: SPI.STM32H7_SPI_Fixed @ sysbus 0x40003C00
     IRQ -> nvic@51
+    //DMAReceive -> dmamux1@61
+    //DMATransmit -> dmamux1@62
+    // TODO:Temporary HACK: for the moment hardwire to the DMA channels we know that eCos KH8x0 uses // allows bootloader to execute
+    DMAReceive -> dma1@3
+    DMATransmit -> dma1@2
 
 // 0x40003800 - 0x40003BFF  SPI2
-spi2: SPI.STM32H7_SPI @ sysbus 0x40003800
+spi2: SPI.STM32H7_SPI_Fixed @ sysbus 0x40003800
     IRQ -> nvic@36
+    DMAReceive -> dmamux1@39
+    DMATransmit -> dmamux1@40
 
 // 0x40002400 - 0x400027FF  LPTIM1
 

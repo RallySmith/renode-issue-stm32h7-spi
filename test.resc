@@ -9,6 +9,11 @@ path add $ORIGIN
 
 include @platforms/devices/ADAU1467.cs
 
+include @platforms/peripherals/STM32H7_PWR.cs
+include @platforms/peripherals/STM32DMA_Fixed.cs
+include @platforms/peripherals/STM32H7_DMAMUX.cs
+include @platforms/peripherals/STM32H7_SPI_Fixed.cs
+
 machine LoadPlatformDescription $ORIGIN/platforms/boards/stm32h723.repl
 
 : Ensure "erased" state for all of the internal STM32F2 flash:
