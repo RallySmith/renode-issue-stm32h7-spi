@@ -1,0 +1,35 @@
+// STM32H723
+
+using "platforms/cpus/stm32h723zg.repl"
+
+spi_mux3: SPI.SPIMultiplexer @ spi3 { init: { SetActiveLow 0; SetActiveLow 1 } }
+
+// ADAU1467WBCPZ300.
+dsp: SPI.ADAU1467 @ spi_mux3 0x0
+
+// dsp chip-select
+gpioPortA: { 15 -> spi_mux3@0 }
+
+// dsp nRESET
+gpioPortE: { 13 -> dsp@31 }
+
+// MX25R1635F on SPI1
+spi_mux1: SPI.SPIMultiplexer @ spi1 { init: { SetActiveLow 0; SetActiveLow 1 } }
+
+extflash: SPI.Macronix_MX25R @ spi_mux1 0x0
+    underlyingMemory: extflash_mem
+
+gpioPortA: { 4 -> spi_mux1@0 }
+
+// CONSIDER: The following is not strictly "correct" since the SPI
+// flash device is NOT actually memory mapped. We would need a different
+// SPI access model with internal memory only. Unfortunately we cannot
+// just use Memory.ArrayMemory WITHOUT a sysbus mapping since the
+// SPI.Macronix_MX25R model relies on MappedMemory.
+//
+// MX25R1635F 16Mbit (2MB)
+// we logically map the m25pxx_flash_device to 0x3E000000
+extflash_mem: Memory.MappedMemory @ {
+        sysbus 0x3E000000
+    }
+    size: 0x200000

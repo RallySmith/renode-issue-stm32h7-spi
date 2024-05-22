@@ -1,20 +1,44 @@
-# This is a sample RESC script.
-# Please change this file and test.robot to include all necessary steps to reproduce your issue.
-# Make this repository as self contained as possible.
-#
-
-$name?="Mi-V"
+:name: STM32H723
+:description: This script runs application binaries on a STM32H723 platform
 
 using sysbus
+$name?="STM32H723"
 mach create $name
-machine LoadPlatformDescription @platforms/boards/miv-board.repl
 
-$bin?=@https://dl.antmicro.com/projects/renode/shell-demo-miv.elf-s_803248-ea4ddb074325b2cc1aae56800d099c7cf56e592a
+path add $ORIGIN
 
-showAnalyzer uart
+include @platforms/devices/ADAU1467.cs
+
+machine LoadPlatformDescription $ORIGIN/platforms/boards/stm32h723.repl
+
+: Ensure "erased" state for all of the internal STM32F2 flash:
+flash0 ResetByte 0xFF
+flash0 ZeroAll
+: NOTE: ZeroAll uses the ResetByte value and hence is not really a zeroing.
+
+$logfile ?= $ORIGIN/artifacts/renode.log
+
+$app ?= @ecos_stm32h723_spi_flash
+
+showAnalyzer sysbus.usart6
+
+: Since the reset macro is executed automatically by renode on a CPU
+: reset we use startofday for the initial test setup, and allow reset
+: to be used to test firmware triggered (soft) CPU resets, e.g. to
+: test in-field firmware updates, watchdog events, etc.
+
+macro startofday
+"""
+    logFile $logfile
+    sysbus LoadELF $app
+"""
 
 macro reset
 """
-    sysbus LoadELF $bin
+    set flash_sp `sysbus ReadDoubleWord 0x08000000`
+    set flash_pc `sysbus ReadDoubleWord 0x08000004`
+    cpu SP $flash_sp
+    cpu PC $flash_pc
 """
-runMacro $reset
+
+runMacro $startofday

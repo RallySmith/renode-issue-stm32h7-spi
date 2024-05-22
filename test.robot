@@ -7,21 +7,19 @@ Resource                      ${RENODEKEYWORDS}
 
 *** Variables ***
 ${SCRIPT}                     ${CURDIR}/test.resc
-${UART}                       sysbus.uart
+${UART}                       sysbus.usart6
 
 
 *** Keywords ***
 Load Script
     Execute Script            ${SCRIPT}
     Create Terminal Tester    ${UART}
-
+    Create Log Tester         1
 
 *** Test Cases ***
 Should Run Test Case
+    [Timeout]                 20 seconds
     Load Script
     Start Emulation
-    Wait For Prompt On Uart     uart:~$
-    Write Line To Uart
-    Wait For Prompt On Uart     uart:~$
-    Write Line To Uart          demo ping
-    Wait For Line On Uart       pong
+    Should Not Be In Log      sysbus: [cpu: 0x8000FDC] ReadDoubleWord from non existing peripheral at 0x5802480C.
+    Wait For Line On Uart     EXIT:<done>
